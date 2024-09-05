@@ -64,7 +64,7 @@ async def schedule_backup():
         now_local = now_utc.astimezone(timezone)
 
         # Określ czas, kiedy ma nastąpić backup (np. 1:00 rano)
-        backup_time_local = timezone.localize(datetime.datetime.combine(now_local.date(), datetime.time(hour=1, minute=0)))
+        backup_time_local = timezone.localize(datetime.datetime.combine(now_local.date(), datetime.time(hour=8, minute=0)))
 
         # Jeśli backup miał się odbyć dzisiaj, ale godzina już minęła, ustaw go na następny tydzień
         if now_local > backup_time_local:
