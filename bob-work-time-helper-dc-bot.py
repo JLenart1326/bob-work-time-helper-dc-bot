@@ -1,6 +1,7 @@
 import discord
 import os
 import asyncio
+import pytz
 from discord.ext import commands
 import datetime
 
@@ -48,21 +49,32 @@ async def on_ready():
     # Uruchomienie funkcji planującej backup raz w tygodniu
     bot.loop.create_task(schedule_backup())
 
+# Funkcja, która planuje backup raz w tygodniu o określonej godzinie w strefie czasowej
 async def schedule_backup():
-    """Zaplanuje backup raz w tygodniu o określonej godzinie"""
+    """Zaplanuje backup raz w tygodniu o określonej godzinie, uwzględniając strefy czasowe"""
+    
+    # Ustawienie strefy czasowej, np. Europe/Warsaw
+    timezone = pytz.timezone('Europe/Warsaw')
+    
     while True:
-        now = datetime.datetime.now(datetime.timezone.utc)
-        backup_time = datetime.datetime.combine(now, datetime.time(hour=1, minute=0))  # np. 1:00 rano
+        # Pobierz aktualny czas w UTC
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
 
-        # Sprawdź, czy już minęliśmy godzinę backupu dzisiaj, jeśli tak, zaplanuj na następny tydzień
-        if now > backup_time:
-            backup_time += datetime.timedelta(weeks=1)  # Przenieś na następny tydzień
+        # Przekonwertuj czas UTC na wybraną strefę czasową (Europe/Warsaw)
+        now_local = now_utc.astimezone(timezone)
 
-        # Oblicz, ile czasu czekać
-        wait_time = (backup_time - now).total_seconds()
-        print(f"Zaplanowano backup na: {backup_time} (czeka: {wait_time / 3600:.2f} godzin)")
+        # Określ czas, kiedy ma nastąpić backup (np. 1:00 rano)
+        backup_time_local = timezone.localize(datetime.datetime.combine(now_local.date(), datetime.time(hour=1, minute=0)))
 
-        # Poczekaj do określonego czasu
+        # Jeśli backup miał się odbyć dzisiaj, ale godzina już minęła, ustaw go na następny tydzień
+        if now_local > backup_time_local:
+            backup_time_local += datetime.timedelta(weeks=1)
+
+        # Oblicz, ile czasu musimy czekać do momentu backupu
+        wait_time = (backup_time_local - now_local).total_seconds()
+        print(f"Zaplanowano backup na: {backup_time_local} (czeka: {wait_time / 3600:.2f} godzin)")
+
+        # Poczekaj do zaplanowanego czasu
         await asyncio.sleep(wait_time)
 
         # Wykonaj backup
