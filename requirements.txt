@@ -1,3 +1,0 @@
-discord.py==1.7.3
-pytz==2021.1
-requests==2.25.1
