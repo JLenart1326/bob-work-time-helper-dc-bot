@@ -10,7 +10,19 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix="!")
 
 # Kanał, w którym bot ma działać (wprowadź odpowiedni ID kanału)
-WORK_CHANNEL_ID = 1234567890
+WORK_CHANNEL_ID = 1280152686737494027
+
+# Lista wariantów słów oznaczających rozpoczęcie pracy
+IN_VARIANTS = ["in", "IN", "In", "iN"]
+
+# Lista wariantów słów oznaczających przerwę
+AFK_VARIANTS = ["afk", "AFK", "Afk", "aFk", "afK", "AFk", "AfK", "aFK"]
+
+# Lista wariantów słów oznaczających powrót z przerwy
+BACK_VARIANTS = ["back", "BACK", "Back", "bAck", "baCk", "bacK"]
+
+# Lista wariantów słów oznaczających zakończenie pracy
+OUT_VARIANTS = ["out", "OUT", "Out", "oUt", "ouT", "OUt", "OuT", "oUT"]
 
 # Struktura danych do przechowywania czasu pracy użytkowników
 work_times = {}
@@ -85,17 +97,17 @@ async def on_message(message):
     if month_key not in work_times[user_id]:
         work_times[user_id][month_key] = 0
 
-    # Włączanie/wyłączanie licznika pracy na podstawie wiadomości
-    if content == "in":
+ # Sprawdzanie słów kluczowych
+    if any(variant in content for variant in IN_VARIANTS):
         work_times[user_id]["start_time"] = current_time
-    elif content == "afk" and "start_time" in work_times[user_id]:
+    elif any(variant in content for variant in AFK_VARIANTS) and "start_time" in work_times[user_id]:
         if "afk_start_time" not in work_times[user_id]:
             work_times[user_id]["afk_start_time"] = current_time
-    elif content == "back" and "afk_start_time" in work_times[user_id]:
+    elif any(variant in content for variant in BACK_VARIANTS) and "afk_start_time" in work_times[user_id]:
         afk_duration = time_difference(work_times[user_id]["afk_start_time"], current_time)
         work_times[user_id]["afk_duration"] = afk_duration
         del work_times[user_id]["afk_start_time"]
-    elif content == "out" and "start_time" in work_times[user_id]:
+    elif any(variant in content for variant in OUT_VARIANTS) and "start_time" in work_times[user_id]:
         if "afk_duration" not in work_times[user_id]:
             work_times[user_id]["afk_duration"] = 0
 
