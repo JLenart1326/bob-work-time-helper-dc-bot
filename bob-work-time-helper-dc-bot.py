@@ -6,8 +6,12 @@ from datetime import datetime, timedelta
 # Token bota
 TOKEN = os.getenv('DISCORD_TOKEN')
 
+intents = discord.Intents.default()
+intents.messages = True  # Umożliwia botowi odczytywanie wiadomości
+intents.message_content = True  # Pozwala botowi na odczytywanie treści wiadomości (od wersji 2.0)
+
 # Ustawienie prefiksu komend
-bot = commands.Bot(command_prefix="!")
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Kanał, w którym bot ma działać (wprowadź odpowiedni ID kanału)
 WORK_CHANNEL_ID = 1280152686737494027
@@ -49,7 +53,7 @@ async def worktime(ctx):
 
     report = "Work Time:\n"
     for user_id, months in work_times.items():
-        user = bot.get_user(user_id)
+        user = await bot.fetch_user(user_id)  # Zmiana tutaj
         user_report = f"{user.name}:\n"
         total_undertime = 0
         total_overtime = 0
@@ -79,6 +83,7 @@ async def worktime(ctx):
         report += user_report + "\n"
 
     await ctx.send(report)
+
 
 @bot.event
 async def on_message(message):
