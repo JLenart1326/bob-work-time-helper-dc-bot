@@ -17,6 +17,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Kanał, w którym bot ma działać (wprowadź odpowiedni ID kanału)
 WORK_CHANNEL_ID = 1280152686737494027
+WORK_TIME_BACKUP_CHANNEL_ID = 1281390847115661424
 
 # Lista wariantów słów oznaczających rozpoczęcie pracy
 IN_VARIANTS = ["in", "IN", "In", "iN"]
@@ -104,6 +105,11 @@ async def save_worktime_backup():
         backup_file.write(report)
     
     print(f"Backup zapisany do pliku: {backup_filepath}")    
+
+    # Wysłanie pliku na kanał na Discordzie
+    backup_channel = bot.get_channel(WORK_CHANNEL_ID)  # Zmień na odpowiedni ID kanału
+    if backup_channel:
+        await backup_channel.send(f"Backup z daty: {current_time.strftime('%Y-%m-%d %H:%M:%S')}", file=discord.File(backup_filepath))
 
 async def generate_worktime_report():
     """Generuje raport pracy użytkowników jako string"""
