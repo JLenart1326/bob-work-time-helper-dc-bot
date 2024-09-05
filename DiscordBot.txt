@@ -1,0 +1,8 @@
+
+https://discord.com/oauth2/authorize?client_id=1281241466651283528&permissions=68608&integration_type=0&scope=bot
+
+python bob-work-time-helper-dc-bot.py
+
+python3 bob-work-time-helper-dc-bot/bob-work-time-helper-dc-bot.py
+nohup python3 bob-work-time-helper-dc-bot/bob-work-time-helper-dc-bot.py &
+

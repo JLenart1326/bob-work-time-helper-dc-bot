@@ -126,5 +126,56 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+# Użytkownik z odpowiednimi uprawnieniami (zmień ID na prawidłowe)
+AUTHORIZED_USER_ID = 726528438701391972  # Zmień na ID użytkownika, który ma uprawnienia
+
+# Komenda do dodawania czasu pracy dla wybranego użytkownika
+@bot.command()
+async def addtime(ctx, user: discord.Member, hours: int, minutes: int):
+    """Dodaje czas pracy dla wybranego użytkownika"""
+    if ctx.author.id != AUTHORIZED_USER_ID:
+        return await ctx.send("Nie masz uprawnień do użycia tej komendy.")
+    
+    current_time = datetime.now()
+    month_key = f"{current_time.month}.{current_time.year}"
+    
+    # Upewnij się, że użytkownik ma zapisaną strukturę czasu pracy
+    if user.id not in work_times:
+        work_times[user.id] = {}
+    
+    if month_key not in work_times[user.id]:
+        work_times[user.id][month_key] = 0
+
+    # Dodaj czas (w sekundach) do aktualnie naliczonego czasu
+    additional_time = (hours * 3600) + (minutes * 60)
+    work_times[user.id][month_key] += additional_time
+
+    await ctx.send(f"Dodano {hours}h {minutes}min do czasu pracy użytkownika {user.name}.")
+
+# Komenda do usuwania czasu pracy dla wybranego użytkownika
+@bot.command()
+async def removetime(ctx, user: discord.Member, hours: int, minutes: int):
+    """Usuwa czas pracy dla wybranego użytkownika"""
+    if ctx.author.id != AUTHORIZED_USER_ID:
+        return await ctx.send("Nie masz uprawnień do użycia tej komendy.")
+    
+    current_time = datetime.now()
+    month_key = f"{current_time.month}.{current_time.year}"
+    
+    # Upewnij się, że użytkownik ma zapisaną strukturę czasu pracy
+    if user.id not in work_times:
+        work_times[user.id] = {}
+
+    if month_key not in work_times[user.id]:
+        work_times[user.id][month_key] = 0
+
+    # Usuń czas (w sekundach) z aktualnie naliczonego czasu
+    removed_time = (hours * 3600) + (minutes * 60)
+    work_times[user.id][month_key] -= removed_time
+
+    await ctx.send(f"Usunięto {hours}h {minutes}min z czasu pracy użytkownika {user.name}.")
+
+
+
 # Uruchomienie bota
 bot.run(TOKEN)
