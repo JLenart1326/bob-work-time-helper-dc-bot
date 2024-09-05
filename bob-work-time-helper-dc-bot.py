@@ -1,9 +1,10 @@
 import discord
+import os
 from discord.ext import commands
 from datetime import datetime, timedelta
 
 # Token bota
-TOKEN = 'TWÓJ_TOKEN_BOTA'
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 # Ustawienie prefiksu komend
 bot = commands.Bot(command_prefix="!")
