@@ -6,3 +6,4 @@ python bob-work-time-helper-dc-bot.py
 python3 bob-work-time-helper-dc-bot/bob-work-time-helper-dc-bot.py
 nohup python3 bob-work-time-helper-dc-bot/bob-work-time-helper-dc-bot.py &
 
+ps aux | grep python

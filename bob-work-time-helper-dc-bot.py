@@ -1,7 +1,7 @@
 import discord
 import os
 from discord.ext import commands
-from datetime import datetime, timedelta
+import datetime
 
 # Token bota
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -45,6 +45,7 @@ def format_time(seconds):
 async def on_ready():
     print(f'Bot zalogowany jako {bot.user}')
 
+
 @bot.command()
 async def worktime(ctx):
     """Komenda, która generuje raport pracy użytkowników"""
@@ -53,14 +54,28 @@ async def worktime(ctx):
 
     report = "Work Time:\n"
     for user_id, months in work_times.items():
-        user = await bot.fetch_user(user_id)  # Zmiana tutaj
+        user = await bot.fetch_user(user_id)
+
+         # Ignorowanie bota przy wypisywaniu raportu
+        if user is None or user.bot:
+            print(f"Zignorowano użytkownika bota o ID: {user_id}")
+            continue
+
         user_report = f"{user.name}:\n"
         total_undertime = 0
         total_overtime = 0
 
         for month, time_spent in months.items():
+            # Jeśli time_spent jest obiektem datetime, zamień go na liczbę sekund
+            if isinstance(time_spent, datetime.datetime):
+                # Zakładam, że jeśli `time_spent` to datetime, to jest to czas rozpoczęcia pracy,
+                # więc obliczamy różnicę do teraz, aby uzyskać liczbę sekund.
+                time_spent = (datetime.datetime.now(datetime.timezone.utc) - time_spent).total_seconds()
+
             # Czas wymagany to 40h = 144000 sekund
             required_time = 40 * 3600
+
+            # Porównanie z required_time (które jest w sekundach)
             if time_spent < required_time:
                 user_report += f"{month} - {format_time(time_spent)} - Not enough!\n"
                 total_undertime += required_time - time_spent
@@ -83,7 +98,6 @@ async def worktime(ctx):
         report += user_report + "\n"
 
     await ctx.send(report)
-
 
 @bot.event
 async def on_message(message):
@@ -129,14 +143,13 @@ async def on_message(message):
 # Użytkownik z odpowiednimi uprawnieniami (zmień ID na prawidłowe)
 AUTHORIZED_USER_ID = 726528438701391972  # Zmień na ID użytkownika, który ma uprawnienia
 
-# Komenda do dodawania czasu pracy dla wybranego użytkownika
 @bot.command()
 async def addtime(ctx, user: discord.Member, hours: int, minutes: int):
     """Dodaje czas pracy dla wybranego użytkownika"""
     if ctx.author.id != AUTHORIZED_USER_ID:
         return await ctx.send("Nie masz uprawnień do użycia tej komendy.")
     
-    current_time = datetime.now()
+    current_time = datetime.datetime.now(datetime.timezone.utc)  # Użyj UTC-aware datetime
     month_key = f"{current_time.month}.{current_time.year}"
     
     # Upewnij się, że użytkownik ma zapisaną strukturę czasu pracy
@@ -152,14 +165,13 @@ async def addtime(ctx, user: discord.Member, hours: int, minutes: int):
 
     await ctx.send(f"Dodano {hours}h {minutes}min do czasu pracy użytkownika {user.name}.")
 
-# Komenda do usuwania czasu pracy dla wybranego użytkownika
 @bot.command()
 async def removetime(ctx, user: discord.Member, hours: int, minutes: int):
     """Usuwa czas pracy dla wybranego użytkownika"""
     if ctx.author.id != AUTHORIZED_USER_ID:
         return await ctx.send("Nie masz uprawnień do użycia tej komendy.")
     
-    current_time = datetime.now()
+    current_time = datetime.datetime.now(datetime.timezone.utc)  # Używamy datetime.datetime.now() po imporcie całego modułu
     month_key = f"{current_time.month}.{current_time.year}"
     
     # Upewnij się, że użytkownik ma zapisaną strukturę czasu pracy
