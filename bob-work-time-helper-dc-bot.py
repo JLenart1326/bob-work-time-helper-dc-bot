@@ -1,5 +1,6 @@
 import discord
 import os
+import asyncio
 from discord.ext import commands
 import datetime
 
@@ -44,21 +45,60 @@ def format_time(seconds):
 @bot.event
 async def on_ready():
     print(f'Bot zalogowany jako {bot.user}')
+    # Uruchomienie funkcji planującej backup raz w tygodniu
+    bot.loop.create_task(schedule_backup())
 
+async def schedule_backup():
+    """Zaplanuje backup raz w tygodniu o określonej godzinie"""
+    while True:
+        now = datetime.datetime.now()
+        backup_time = datetime.datetime.combine(now, datetime.time(hour=1, minute=0))  # np. 1:00 rano
 
-@bot.command()
-async def worktime(ctx):
-    """Komenda, która generuje raport pracy użytkowników"""
-    if ctx.channel.id != WORK_CHANNEL_ID:
-        return await ctx.send("Ta komenda działa tylko na wybranym kanale.")
+        # Sprawdź, czy już minęliśmy godzinę backupu dzisiaj, jeśli tak, zaplanuj na następny tydzień
+        if now > backup_time:
+            backup_time += datetime.timedelta(weeks=1)  # Przenieś na następny tydzień
 
+        # Oblicz, ile czasu czekać
+        wait_time = (backup_time - now).total_seconds()
+        print(f"Zaplanowano backup na: {backup_time} (czeka: {wait_time / 3600:.2f} godzin)")
+
+        # Poczekaj do określonego czasu
+        await asyncio.sleep(wait_time)
+
+        # Wykonaj backup
+        await save_worktime_backup()
+
+        # Poczekaj tydzień do następnego backupu
+        await asyncio.sleep(7 * 24 * 3600)  # 7 dni w sekundach
+        
+async def save_worktime_backup():
+    """Generuje raport z !worktime i zapisuje go do pliku w folderze backups"""
+    folder_path = 'backups'
+    
+    # Sprawdzenie, czy folder backups istnieje, jeśli nie, to go tworzymy
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    
+    # Generujemy nazwę pliku z datą wykonania backupu
+    current_time = datetime.datetime.now()
+    backup_filename = f"worktimebackup_{current_time.strftime('%Y-%m-%d_%H-%M-%S')}.txt"
+    backup_filepath = os.path.join(folder_path, backup_filename)
+    
+    # Użycie funkcji generate_worktime_report() do uzyskania raportu
+    report = await generate_worktime_report()
+
+    # Zapisanie raportu do pliku
+    with open(backup_filepath, 'w') as backup_file:
+        backup_file.write(report)
+    
+    print(f"Backup zapisany do pliku: {backup_filepath}")    
+
+async def generate_worktime_report():
+    """Generuje raport pracy użytkowników jako string"""
     report = "Work Time:\n"
     for user_id, months in work_times.items():
         user = await bot.fetch_user(user_id)
-
-         # Ignorowanie bota przy wypisywaniu raportu
         if user is None or user.bot:
-            print(f"Zignorowano użytkownika bota o ID: {user_id}")
             continue
 
         user_report = f"{user.name}:\n"
@@ -66,16 +106,11 @@ async def worktime(ctx):
         total_overtime = 0
 
         for month, time_spent in months.items():
-            # Jeśli time_spent jest obiektem datetime, zamień go na liczbę sekund
             if isinstance(time_spent, datetime.datetime):
-                # Zakładam, że jeśli `time_spent` to datetime, to jest to czas rozpoczęcia pracy,
-                # więc obliczamy różnicę do teraz, aby uzyskać liczbę sekund.
                 time_spent = (datetime.datetime.now(datetime.timezone.utc) - time_spent).total_seconds()
 
-            # Czas wymagany to 40h = 144000 sekund
-            required_time = 40 * 3600
+            required_time = 40 * 3600  # 40 godzin to 144000 sekund
 
-            # Porównanie z required_time (które jest w sekundach)
             if time_spent < required_time:
                 user_report += f"{month} - {format_time(time_spent)} - Not enough!\n"
                 total_undertime += required_time - time_spent
@@ -97,6 +132,15 @@ async def worktime(ctx):
         user_report += f"Overtime: {format_time(total_overtime)}\n"
         report += user_report + "\n"
 
+    return report
+
+@bot.command()
+async def worktime(ctx):
+    """Komenda, która generuje raport pracy użytkowników i wysyła go na kanał"""
+    if ctx.channel.id != WORK_CHANNEL_ID:
+        return await ctx.send("Ta komenda działa tylko na wybranym kanale.")
+    
+    report = await generate_worktime_report()
     await ctx.send(report)
 
 @bot.event
