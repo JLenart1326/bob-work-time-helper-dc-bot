@@ -51,7 +51,7 @@ async def on_ready():
 async def schedule_backup():
     """Zaplanuje backup raz w tygodniu o określonej godzinie"""
     while True:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(datetime.timezone.utc)
         backup_time = datetime.datetime.combine(now, datetime.time(hour=1, minute=0))  # np. 1:00 rano
 
         # Sprawdź, czy już minęliśmy godzinę backupu dzisiaj, jeśli tak, zaplanuj na następny tydzień
